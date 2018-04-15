@@ -3,17 +3,23 @@ name = "nettfiske"
 version = "0.1.0"
 authors = ["Flavio Oliveira <rusty@wisespace.io>"]
 
+description = "Detect Phishing fetching Certificate Transparency Logs"
+keywords = ["phishing", "ssl", "idna"]
+documentation = "https://docs.rs/crate/nettfiske/"
+repository = "https://github.com/wisespace-io/nettfiske"
+readme = "README.md"
+
 [dependencies]
 url = "1.6"
-log = "0.4.1"
-fern = "0.5.5"
+log = "0.4"
+fern = "0.5"
 chrono = "0.4.2"
 tungstenite = "0.5"
-publicsuffix = "1.5.1"
+publicsuffix = "1.5"
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
-console = "0.6.1"
+console = "0.6"
 strsim = "0.7"
 lazy_static = "1.0"
-idna = "0.1.4"
+idna = "0.1"

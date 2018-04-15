@@ -20,9 +20,12 @@ lazy_static! {
         m.insert("instagram", 10);
         m.insert("telegram", 10);     
         m.insert("skype", 10);  
+        m.insert("tinder", 10); 
+        m.insert("snapchat", 10); 
+        m.insert("whatsapp", 10);
 
         // Streaming
-        m.insert("spofify", 10);
+        m.insert("spotify", 10);
         m.insert("youtube", 10);
         m.insert("itunes", 10);
         m.insert("netflix", 10);
@@ -52,6 +55,10 @@ lazy_static! {
         // Commons  
         m.insert("appleid", 10);
         m.insert("icloud", 10);
+
+        // Utils
+        m.insert("dropbox", 10);
+        m.insert("lastpass", 10);
 
         m
     };

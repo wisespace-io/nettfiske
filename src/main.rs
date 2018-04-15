@@ -74,7 +74,7 @@ fn main() {
                         // Check for any Punycode and rebuild the url
                         // Ie.: xn--80ak6aa92e.com == apple.com
                         let domain_str = punycode(domain.clone());
-                        let mut score = domain.matches("xn--").count() * 10;
+                        let mut score = domain.matches("xn--").count() * 5;
 
                         if let Ok(domain) = list.parse_domain(&domain_str) {                           
                             
@@ -96,7 +96,7 @@ fn main() {
                                 }
 
                                 // Check for .com, .net on subdomain
-                                let tldl: Vec<&str> = vec!["com", "net", "-net", "-com"];
+                                let tldl: Vec<&str> = vec!["com", "net", "-net", "-com", "net-", "com-"];
                                 for key in &tldl {
                                     score += domain_keywords_exact_match(sub_domain_name[0], key, 8);
                                 }  
@@ -164,15 +164,15 @@ fn punycode(domain: String) -> String {
 }
 
 fn report(score: usize, domain: &str, domain_original: &str) {
-    if score >= 72 {
+    if score >= 76 {
         print_domain(score, style(domain).red(), domain_original);
-    } else if score >= 65 {
+    } else if score >= 68 {
         print_domain(score, style(domain).magenta(), domain_original);
-    } else if score >= 55 {
+    } else if score >= 56 {
         print_domain(score, style(domain).yellow(), domain_original);
     }
 
-    if score >= 55 {
+    if score >= 56 {
         if domain_original.matches("xn--").count() > 0 {
             info!("{} - (Punycode: {})", domain, domain_original);
         } else {
