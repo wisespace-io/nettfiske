@@ -2,6 +2,7 @@
 name = "nettfiske"
 version = "0.1.0"
 authors = ["Flavio Oliveira <rusty@wisespace.io>"]
+license = "MIT OR Apache-2.0"
 
 description = "Detect Phishing fetching Certificate Transparency Logs"
 keywords = ["phishing", "ssl", "idna"]
