@@ -106,13 +106,13 @@ fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<&&str>) 
             for key in &keywords {
                 // Check Registration domain
                 score += domain_keywords(domain_name[0], key) * 4;
-                score += calc_string_edit_distance(domain_name[0], key) + 20;
+                score += calc_string_edit_distance(domain_name[0], key, 6);
 
                 // Check subdomain
                 for name in & sub_domain_name {
                     score += domain_keywords(name, key) * 5;
-                    if !name.contains("mail") {
-                        score += calc_string_edit_distance(name, key);
+                    if !name.contains("mail") || !name.contains("cloud") {
+                        score += calc_string_edit_distance(name, key, 4);
                     }
                 }
             }
@@ -163,9 +163,9 @@ fn domain_keywords_exact_match(name: &str, key: &str) -> usize {
 
 // Damerau Levenshtein: Calculates number of operations (Insertions, deletions or substitutions,
 // or transposition of two adjacent characters) required to change one word into the other.
-fn calc_string_edit_distance(name: &str, key: &str) -> usize {
+fn calc_string_edit_distance(name: &str, key: &str, weight: usize) -> usize {
     if damerau_levenshtein(name, key) == 1 {
-        return 40;
+        return 10 * weight;
     }
     return 0;
 }
