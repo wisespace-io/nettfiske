@@ -269,7 +269,7 @@ dependencies = [
 
 [[package]]
 name = "nettfiske"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "console 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",

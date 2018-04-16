@@ -1,12 +1,12 @@
 [package]
 name = "nettfiske"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Flavio Oliveira <rusty@wisespace.io>"]
 license = "MIT OR Apache-2.0"
 
 description = "Detect Phishing fetching Certificate Transparency Logs"
-keywords = ["phishing", "ssl", "idna"]
-documentation = "https://docs.rs/crate/nettfiske/"
+keywords = ["phishing", "security", "idna", "punycode"]
+documentation = "https://github.com/wisespace-io/nettfiske"
 repository = "https://github.com/wisespace-io/nettfiske"
 readme = "README.md"
 

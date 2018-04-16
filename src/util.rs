@@ -42,6 +42,7 @@ lazy_static! {
         m.insert("office365", 10);        
         m.insert("yahoo", 10);
         m.insert("google", 10);
+        m.insert("outlook", 10);
 
         // Ecommerce        
         m.insert("amazon", 10);
@@ -52,7 +53,9 @@ lazy_static! {
         m.insert("finn", 10);
         m.insert("blocket", 10);
 
-        // Commons  
+        // Commons
+        m.insert("microsoft", 10);
+        m.insert("apple", 10);
         m.insert("appleid", 10);
         m.insert("icloud", 10);
 
