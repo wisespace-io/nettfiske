@@ -1,6 +1,6 @@
 [package]
 name = "nettfiske"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Flavio Oliveira <rusty@wisespace.io>"]
 license = "MIT OR Apache-2.0"
 
@@ -24,3 +24,4 @@ console = "0.6"
 strsim = "0.7"
 lazy_static = "1.0"
 idna = "0.1"
+unicode_skeleton = "0.1.1"

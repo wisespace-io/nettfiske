@@ -11,35 +11,22 @@ extern crate publicsuffix;
 extern crate fern;
 extern crate chrono;
 extern crate idna;
+extern crate unicode_skeleton;
 
 mod util;
 
 use url::Url;
+use util::CertString;
 use publicsuffix::List;
 use tungstenite::{connect};
 use serde_json::{from_str};
 use console::{Emoji, style};
 use strsim::{damerau_levenshtein};
 use idna::punycode::{decode};
+use unicode_skeleton::{UnicodeSkeleton};
 
 static LOOKING_GLASS: Emoji = Emoji("🔍  ", "");
 static WEBSOCKET_URL: &'static str = "wss://certstream.calidog.io";
-
-#[derive(Deserialize, Debug)]
-struct CertString {
-    message_type: String,
-    data: Data,
-}
-
-#[derive(Deserialize, Debug)]
-struct Data {
-    leaf_cert: LeafCert,
-}
-
-#[derive(Deserialize, Debug)]
-struct LeafCert {
-    all_domains: Vec<String>,
-}
 
 fn main() {
     match setup_logger() {
@@ -60,19 +47,21 @@ fn main() {
 
             loop {
                 let msg = answer.0.read_message().unwrap();      
-                if msg.is_text() {
-                    let msg_txt = msg.into_text().unwrap();
-                    let cert: CertString = from_str(msg_txt.as_str()).unwrap();
+                if msg.is_text() && msg.len() > 0 {
+                    let msg_txt = msg.into_text().unwrap_or("".to_string());
+                    if msg_txt.len() > 0 {
+                        let cert: CertString = from_str(msg_txt.as_str()).unwrap();
 
-                    if cert.message_type.contains("heartbeat") {
-                        continue;
-                    } else if cert.message_type.contains("certificate_update") {
-                        for mut domain in cert.data.leaf_cert.all_domains {
-                            if domain.starts_with("*.") {
-                                domain = domain.replace("*.", "");
-                            }
+                        if cert.message_type.contains("heartbeat") {
+                            continue;
+                        } else if cert.message_type.contains("certificate_update") {
+                            for mut domain in cert.data.leaf_cert.all_domains {
+                                if domain.starts_with("*.") {
+                                    domain = domain.replace("*.", "");
+                                }
                                              
-                            analyse_domain(&domain, &mut list, keywords.clone());
+                                analyse_domain(&domain, &mut list, keywords.clone());
+                            }
                         }
                     }
                  }
@@ -85,12 +74,13 @@ fn main() {
 }
 
 fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<&&str>) {
+    let mut punycode_detected = false;
     let mut score = 0;
     let domain = punycode(original_domain.to_string());
     
     // It means that found punycode
     if original_domain != domain {
-        score += 20;
+        punycode_detected = true;
     }
 
     if let Ok(domain_obj) = list.parse_domain(&domain) {  
@@ -100,19 +90,21 @@ fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<&&str>) 
             let domain_name: Vec<&str> = registrable.split('.').collect();
 
             // Subdomain
-            let sub_domain = domain.replace(registrable, "");
+            let mut sub_domain = domain.replace(registrable, "");
+            sub_domain.pop(); // remove .
+
             let sub_domain_name: Vec<&str> = sub_domain.split('.').collect();
 
             for key in &keywords {
                 // Check Registration domain
                 score += domain_keywords(domain_name[0], key) * 4;
-                score += calc_string_edit_distance(domain_name[0], key, 6);
+                score += calc_string_edit_distance(domain_name[0], key, 6, punycode_detected);
 
                 // Check subdomain
-                for name in & sub_domain_name {
+                for name in &sub_domain_name {
                     score += domain_keywords(name, key) * 5;
-                    if !name.contains("mail") || !name.contains("cloud") {
-                        score += calc_string_edit_distance(name, key, 4);
+                    if !name.contains("mail") && !name.contains("cloud") {
+                        score += calc_string_edit_distance(name, key, 4, punycode_detected);
                     }
                 }
             }
@@ -124,7 +116,7 @@ fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<&&str>) 
 
     score += deeply_nested(&domain);
 
-    report(score, &original_domain, &domain);
+    report(score, &original_domain, &domain, punycode_detected);
 }
 
 fn search_tldl_on_subdomain(sub_domain: &Vec<&str>) -> usize {
@@ -163,9 +155,13 @@ fn domain_keywords_exact_match(name: &str, key: &str) -> usize {
 
 // Damerau Levenshtein: Calculates number of operations (Insertions, deletions or substitutions,
 // or transposition of two adjacent characters) required to change one word into the other.
-fn calc_string_edit_distance(name: &str, key: &str, weight: usize) -> usize {
-    if damerau_levenshtein(name, key) == 1 {
-        return 10 * weight;
+fn calc_string_edit_distance(name: &str, key: &str, weight: usize, punycode_detected: bool) -> usize {
+    let distance = damerau_levenshtein(name, key);
+
+    if (distance == 1 || distance == 0) && punycode_detected {
+        return 15 * weight;
+    } else if distance == 1 {
+        return 8 * weight;
     }
     return 0;
 }
@@ -179,7 +175,8 @@ fn punycode(domain: String) -> String {
         if word.starts_with("xn--") {
             let pu = word.replace("xn--", "");
             let decoded = decode(&pu).unwrap().into_iter().collect::<String>();
-            result.push(decoded.clone());
+            let skeleton = decoded.skeleton_chars().collect::<String>();
+            result.push(skeleton.clone());
         } else {
             result.push(word.to_string());
         }
@@ -188,29 +185,23 @@ fn punycode(domain: String) -> String {
     result.join(".")
 }
 
-fn report(score: usize, domain_original: &str, domain: &str) {
-    if score >= 90 {
-        print_domain(score, style(domain).red(), domain_original);
+fn report(score: usize, domain_original: &str, domain: &str, punycode_detected: bool) {
+    if score >= 90 && punycode_detected {
+        println!("Homoglyph detected {} (Punycode: {})", style(domain).red().on_black().bold(), domain_original);
+    } else if score >= 90 {
+        println!("Suspicious {} (score {})", style(domain).red(), score);    
     } else if score >= 70 {
-        print_domain(score, style(domain).yellow(), domain_original);
+        println!("Suspicious {} (score {})", style(domain).yellow(), score);        
     } else if score >= 56 {
-        print_domain(score, style(domain).magenta(), domain_original);
+        println!("Suspicious {} (score {})", style(domain_original).magenta(), score);
     }
 
     if score >= 56 {
-        if domain_original.matches("xn--").count() > 0 {
+        if punycode_detected {
             info!("{} - (Punycode: {})", domain, domain_original);
         } else {
             info!("{}", domain);
         }
-    }
-}
-
-fn print_domain(score: usize, styled_domain: console::StyledObject<&str>, domain_original: &str) {
-    if domain_original.matches("xn--").count() > 0 {
-        println!("Suspicious {} (score {}) (Punycode: {})", styled_domain, score, domain_original);
-    } else {
-        println!("Suspicious {} (score {})", styled_domain, score);
     }
 }
 

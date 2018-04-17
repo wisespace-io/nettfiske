@@ -18,6 +18,8 @@ cargo run --release
 
 ```Console
 [Nettfiske]  Fetching Certificates ...
+Homoglyph detected youtuḅe.com (Punycode: xn--youtue-tg7b.com)
+Homoglyph detected youtuḅe.com (Punycode: xn--youtue-tg7b.com)
 Suspicious paypal.com-secure.warn-allmail.com (score 72)
 Suspicious applêid.àpplê.com.iosets.com (score 65) (Punycode: xn--applid-lva.xn--ppl-8ka7c.com.iosets.com)
 Suspicious facebook.com-verified-id939819835.com (score 69)

@@ -1,5 +1,21 @@
 use std::collections::HashMap;
 
+#[derive(Deserialize, Debug)]
+pub struct CertString {
+    pub message_type: String,
+    pub data: Data,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Data {
+    pub leaf_cert: LeafCert,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct LeafCert {
+    pub all_domains: Vec<String>,
+}
+
 lazy_static! {
     pub static ref KEYWORDS: HashMap<&'static str, u32> = {
         let mut m = HashMap::new();
@@ -50,8 +66,11 @@ lazy_static! {
         m.insert("alibaba", 10);
         m.insert("aliexpress", 10);
         m.insert("zalando", 10);
-        m.insert("finn", 10);
+        m.insert("rakuten", 10);
+        m.insert("groupon", 10);        
         m.insert("blocket", 10);
+        m.insert("expedia", 10);
+        m.insert("baidu", 10);
 
         // Commons
         m.insert("microsoft", 10);
@@ -62,7 +81,6 @@ lazy_static! {
         // Utils
         m.insert("dropbox", 10);
         m.insert("lastpass", 10);
-
         m
     };
 }
