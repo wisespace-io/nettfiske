@@ -1,4 +1,12 @@
-use std::collections::HashMap;
+extern crate fern;
+extern crate chrono;
+
+use log::{LevelFilter};
+use publicsuffix::List;
+use console::{style};
+use strsim::{damerau_levenshtein};
+use idna::punycode::{decode};
+use unicode_skeleton::{UnicodeSkeleton};
 
 #[derive(Deserialize, Debug)]
 pub struct CertString {
@@ -16,71 +24,154 @@ pub struct LeafCert {
     pub all_domains: Vec<String>,
 }
 
-lazy_static! {
-    pub static ref KEYWORDS: HashMap<&'static str, u32> = {
-        let mut m = HashMap::new();
-        
-        // Crypto Exchanges
-        m.insert("binance", 10);
-        m.insert("bitfinex", 10);
-        m.insert("coinbase", 10);
-        m.insert("qryptos", 10);
-        m.insert("huobi", 10);
-        m.insert("bittrex", 10);
-        m.insert("cobinhood", 10);        
-        
-        // Social Media
-        m.insert("twitter", 10);
-        m.insert("facebook", 10);
-        m.insert("linkedin", 10);
-        m.insert("instagram", 10);
-        m.insert("telegram", 10);     
-        m.insert("skype", 10);  
-        m.insert("tinder", 10); 
-        m.insert("snapchat", 10); 
-        m.insert("whatsapp", 10);
+pub fn setup_logger() -> Result<(), fern::InitError> {
+    fern::Dispatch::new()
+        .format(|out, message, _record| {
+            out.finish(format_args!(
+                "{} {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                message
+            ))
+        })
+        .level(LevelFilter::Info)
+        .chain(fern::log_file("nettfiske.log")?)
+        .apply()?;
+    Ok(())
+}
 
-        // Streaming
-        m.insert("spotify", 10);
-        m.insert("youtube", 10);
-        m.insert("itunes", 10);
-        m.insert("netflix", 10);
 
-        // Payments/Banks
-        m.insert("paypal", 10);
-        m.insert("transferwise", 10);
-        m.insert("westernunion", 10);
-        m.insert("santander", 10);
-        m.insert("hsbc", 10);
+pub fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<String>) {
+    let mut punycode_detected = false;
+    let mut score = 0;
+    let domain = punycode(original_domain.to_string());
+    
+    // It means that found punycode
+    if original_domain != domain {
+        punycode_detected = true;
+    }
 
-        // Emails        
-        m.insert("gmail", 10);
-        m.insert("office365", 10);        
-        m.insert("yahoo", 10);
-        m.insert("google", 10);
-        m.insert("outlook", 10);
+    if let Ok(domain_obj) = list.parse_domain(&domain) {  
 
-        // Ecommerce        
-        m.insert("amazon", 10);
-        m.insert("overstock", 10);        
-        m.insert("alibaba", 10);
-        m.insert("aliexpress", 10);
-        m.insert("zalando", 10);
-        m.insert("rakuten", 10);
-        m.insert("groupon", 10);        
-        m.insert("blocket", 10);
-        m.insert("expedia", 10);
-        m.insert("baidu", 10);
+        if let Some(registrable) = domain_obj.root() {
+            // Registrable domain
+            let domain_name: Vec<&str> = registrable.split('.').collect();
 
-        // Commons
-        m.insert("microsoft", 10);
-        m.insert("apple", 10);
-        m.insert("appleid", 10);
-        m.insert("icloud", 10);
+            // Subdomain
+            let mut sub_domain = domain.replace(registrable, "");
+            sub_domain.pop(); // remove .
 
-        // Utils
-        m.insert("dropbox", 10);
-        m.insert("lastpass", 10);
-        m
-    };
+            let sub_domain_name: Vec<&str> = sub_domain.split('.').collect();
+
+            for key in &keywords {
+                // Check Registration domain
+                score += domain_keywords(domain_name[0], key) * 4;
+                score += calc_string_edit_distance(domain_name[0], key, 6, punycode_detected);
+
+                // Check subdomain
+                for name in &sub_domain_name {
+                    score += domain_keywords(name, key) * 5;
+                    if !name.contains("mail") && !name.contains("cloud") {
+                        score += calc_string_edit_distance(name, key, 4, punycode_detected);
+                    }
+                }
+            }
+
+            // Check for tldl on subdomain
+            score += search_tldl_on_subdomain(&sub_domain_name);
+        }
+    }
+
+    score += deeply_nested(&domain);
+
+    report(score, &original_domain, &domain, punycode_detected);
+}
+
+fn search_tldl_on_subdomain(sub_domain: &Vec<&str>) -> usize {
+    let tldl: Vec<&str> = vec!["com", "net", "-net", "-com", "net-", "com-", "com/", "net/"];
+    for key in &tldl {
+        for name in sub_domain {
+            if *key == "com" || *key == "net" {
+                return domain_keywords_exact_match(&name, key) * 4;
+            } else {
+                return domain_keywords(&name, key) * 4;
+            }
+        }
+    }
+    return 0;
+}
+
+fn deeply_nested(domain: &str) -> usize {
+    let v: Vec<&str> = domain.split('.').collect();
+    let size = if v.len() >= 3 { v.len() * 3 } else { 0 };
+    size
+}
+
+fn domain_keywords(name: &str, key: &str) -> usize {
+    if name.contains(key) {
+        return 10;
+    }
+    return 0;
+}
+
+fn domain_keywords_exact_match(name: &str, key: &str) -> usize {
+    if name.eq_ignore_ascii_case(key) {
+        return 10;
+    }
+    return 0;
+}
+
+// Damerau Levenshtein: Calculates number of operations (Insertions, deletions or substitutions,
+// or transposition of two adjacent characters) required to change one word into the other.
+fn calc_string_edit_distance(name: &str, key: &str, weight: usize, punycode_detected: bool) -> usize {
+    let distance = damerau_levenshtein(name, key);
+
+    if (distance == 1 || distance == 0) && punycode_detected {
+        return 15 * weight;
+    } else if distance == 1 {
+        return 8 * weight;
+    }
+    return 0;
+}
+
+// Decode the domain as Punycode
+fn punycode(domain: String) -> String {
+    let mut result = Vec::new();
+    let words_list: Vec<&str> = domain.split('.').collect();
+
+    for word in &words_list {
+        if word.starts_with("xn--") {
+            let pu = word.replace("xn--", "");
+            let decoded = decode(&pu).unwrap().into_iter().collect::<String>();
+            let skeleton = decoded.skeleton_chars().collect::<String>();
+            result.push(skeleton.clone());
+        } else {
+            result.push(word.to_string());
+        }
+    }
+
+    result.join(".")
+}
+
+fn report(score: usize, domain_original: &str, domain: &str, punycode_detected: bool) {
+    if score >= 90 && punycode_detected {
+        println!("Homoglyph detected {} (Punycode: {})", style(domain).red().on_black().bold(), domain_original);
+    } else if score >= 90 {
+        println!("Suspicious {} (score {})", style(domain).red(), score);    
+    } else if score >= 70 {
+        println!("Suspicious {} (score {})", style(domain).yellow(), score);        
+    } else if score >= 56 {
+        println!("Suspicious {} (score {})", style(domain_original).magenta(), score);
+    }
+
+    if score >= 56 {
+        if punycode_detected {
+            info!("{} - (Punycode: {})", domain, domain_original);
+        } else {
+            info!("{}", domain);
+        }
+    }
+}
+
+pub fn display(string: String) {
+    println!("{}", string);
 }

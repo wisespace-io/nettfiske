@@ -6,7 +6,6 @@
 # Nettfiske
 
 Uses [certstream](https://certstream.calidog.io/) SSL certificates live stream to identify possible phishing domain names. It is inspired by [Phishing Catcher](https://github.com/x0rz/phishing_catcher).
-(WORK IN PROGRESS)
 
 ## Usage
 
@@ -20,6 +19,10 @@ cargo run --release
 [Nettfiske]  Fetching Certificates ...
 Homoglyph detected youtuḅe.com (Punycode: xn--youtue-tg7b.com)
 Homoglyph detected youtuḅe.com (Punycode: xn--youtue-tg7b.com)
+Homoglyph detected whatsapp.com (Punycode: xn--hatsapp-h41c.com)
+Homoglyph detected whatsapp.com (Punycode: xn--hatsapp-h41c.com)
+Homoglyph detected twiṫter.com (Punycode: xn--twiter-507b.com)
+Homoglyph detected twiṫter.com (Punycode: xn--twiter-507b.com)
 Suspicious paypal.com-secure.warn-allmail.com (score 72)
 Suspicious applêid.àpplê.com.iosets.com (score 65) (Punycode: xn--applid-lva.xn--ppl-8ka7c.com.iosets.com)
 Suspicious facebook.com-verified-id939819835.com (score 69)
