@@ -17,6 +17,15 @@ lazy_static! {
         m.insert("upbit", 10);
         m.insert("bit-z", 10);
         
+        // Crypto wallets
+        m.insert("myetherwallet", 10);
+    
+        // Crypto coins
+        m.insert("iota", 10);
+        m.insert("ripple", 10);
+        m.insert("omisego", 10);
+        m.insert("ethereum", 10);
+
         // Social Media
         m.insert("twitter", 10);
         m.insert("facebook", 10);

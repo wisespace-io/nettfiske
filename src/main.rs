@@ -52,15 +52,22 @@ impl Handler for Client {
 
     fn on_message(&mut self, msg: Message) -> WS_RESULT<()> {
         let msg_txt = msg.as_text()?;
-        let cert: CertString = from_str(msg_txt).unwrap();
 
-        if cert.message_type.contains("certificate_update") {
-            for mut domain in cert.data.leaf_cert.all_domains {
-                if domain.starts_with("*.") {
-                    domain = domain.replace("*.", "");
+        match from_str(msg_txt) {
+            Ok(message) => {
+                let cert: CertString = message;
+                if cert.message_type.contains("certificate_update") {
+                    for mut domain in cert.data.leaf_cert.all_domains {
+                        if domain.starts_with("*.") {
+                            domain = domain.replace("*.", "");
+                        }
+                                                    
+                        util::analyse_domain(&domain, &mut self.list, self.keywords.clone());
+                    }
                 }
-                                             
-                util::analyse_domain(&domain, &mut self.list, self.keywords.clone());
+            } Err(_) => {
+                error!("Received unknown message: {}", msg);
+                return Ok(());
             }
         }
 
