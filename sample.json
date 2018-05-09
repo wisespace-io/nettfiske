@@ -1,0 +1,31 @@
+{
+    "identities" : [
+        { 
+            "common_name": "myetherwallet"
+        },
+        {
+            "common_name": "bitfinex"
+        },
+        {
+            "common_name": "binance",
+            "certificate": {
+                "issued_to": "Binance Holdings Limited",
+                "issued_by": "DigiCert Inc"
+            }
+        },
+        {
+            "common_name": "coinbase",
+            "certificate": {
+                "issued_to": "Coinbase, Inc.",
+                "issued_by": "DigiCert Inc"
+            }
+        },
+        {
+            "common_name": "paypal",
+            "certificate": {
+                "issued_to": "PayPal, Inc.",
+                "issued_by": "Symantec Corporation"
+            }
+        }
+    ]
+}

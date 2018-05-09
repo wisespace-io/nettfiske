@@ -1,6 +1,9 @@
 extern crate fern;
 extern crate chrono;
 
+use data;
+use std::fs::File;
+use std::io::{BufReader, Error as IOError, prelude::*};
 use log::{LevelFilter};
 use publicsuffix::List;
 use console::{style};
@@ -17,11 +20,44 @@ pub struct CertString {
 #[derive(Deserialize, Debug)]
 pub struct Data {
     pub leaf_cert: LeafCert,
+    pub chain: Vec<ChainObjects>
 }
 
 #[derive(Deserialize, Debug)]
 pub struct LeafCert {
+    pub subject: Subject,
     pub all_domains: Vec<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ChainObjects {
+    pub subject: Subject,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Subject {
+    aggregated: String,
+    #[serde(rename = "C")]
+    c: Option<String>,
+    #[serde(rename = "ST")]
+    st: Option<String>,
+    #[serde(rename = "L")]
+    l: Option<String>,
+    #[serde(rename = "O")]
+    pub organization: Option<String>,
+    #[serde(rename = "OU")]
+    pub organizational_unit: Option<String>,
+    #[serde(rename = "CN")]
+    pub common_name: String
+}
+
+pub fn open_json_config(file_name: &str) -> Result<String, IOError> {
+    let file = File::open(file_name)?;
+    let mut buf_reader = BufReader::new(file);
+    let mut contents = String::new();
+    buf_reader.read_to_string(&mut contents)?;
+
+    Ok(contents)    
 }
 
 pub fn setup_logger() -> Result<(), fern::InitError> {
@@ -40,7 +76,7 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
 }
 
 
-pub fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<String>) {
+pub fn analyse_domain(original_domain: &str, list: &mut List, config: data::Config) {
     let mut punycode_detected = false;
     let mut score = 0;
     let domain = punycode(original_domain.to_string());
@@ -62,7 +98,9 @@ pub fn analyse_domain(original_domain: &str, list: &mut List, keywords: Vec<Stri
 
             let sub_domain_name: Vec<&str> = sub_domain.split('.').collect();
 
-            for key in &keywords {
+            for identities in &config.identities {
+                let key = identities.common_name.as_str();
+
                 // Check Registration domain
                 score += domain_keywords(domain_name[0], key) * 4;
                 score += calc_string_edit_distance(domain_name[0], key, 6, punycode_detected);

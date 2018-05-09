@@ -10,7 +10,7 @@ Uses [certstream](https://certstream.calidog.io/) SSL certificates live stream t
 ## Usage
 
 ```rust
-cargo run --release
+cargo run --release sample.json
 ```
 
 ### Example

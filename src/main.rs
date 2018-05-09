@@ -1,6 +1,5 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate serde_derive;
-#[macro_use] extern crate lazy_static;
 extern crate serde;
 extern crate serde_json;
 extern crate url;
@@ -10,6 +9,7 @@ extern crate publicsuffix;
 extern crate idna;
 extern crate unicode_skeleton;
 extern crate ws;
+extern crate clap;
 
 mod util;
 mod data;
@@ -21,6 +21,7 @@ use util::CertString;
 use serde_json::{from_str};
 use console::{Emoji, style};
 use publicsuffix::List;
+use clap::{Arg, App};
 use ws::{connect, CloseCode, Error, ErrorKind, Handler, Handshake, Message, Result as WS_RESULT, Sender};
 
 static LOOKING_GLASS: Emoji = Emoji("🔍  ", "");
@@ -33,7 +34,7 @@ enum Event {
 
 struct Client {
     list: List,
-    keywords: Vec<String>,
+    config: data::Config,
     ws_out: Sender,
     thread_out: TSender<Event>,
 }
@@ -61,12 +62,12 @@ impl Handler for Client {
                         if domain.starts_with("*.") {
                             domain = domain.replace("*.", "");
                         }
-                                                    
-                        util::analyse_domain(&domain, &mut self.list, self.keywords.clone());
+                        
+                        util::analyse_domain(&domain, &mut self.list, self.config.clone());
                     }
                 }
-            } Err(_) => {
-                error!("Received unknown message: {}", msg);
+            } Err(e) => {
+                error!("Received unknown message: {}", e);
                 return Ok(());
             }
         }
@@ -92,29 +93,41 @@ impl Handler for Client {
 }
 
 fn main() {
-    match util::setup_logger() {
-        Err(why) => panic!("{}", why),
-        Ok(_) => (),
-    };
+    let matches = App::new("Nettfiske")
+                        .args(&[
+                            Arg::with_name("input")
+                                    .help("the input file to use")
+                                    .index(1)
+                                    .required(true)
+                        ]).get_matches();
 
-    let local_keywords: Vec<String> = data::KEYWORDS.keys().map(|&x| x.to_string()).collect(); 
+    if let Some(file_name) = matches.value_of("input") {
+        let json_config = util::open_json_config(file_name).unwrap();
 
-    let url: String = format!("{}", WEBSOCKET_URL);
-    let (tx, rx) = channel();
+        let config: data::Config = serde_json::from_str(&json_config).unwrap();
 
-    let client = thread::spawn(move || {
-        connect(url, |sender| Client {
-            list: List::fetch().unwrap(),
-            keywords: local_keywords.clone(),
-            ws_out: sender,
-            thread_out: tx.clone(),
-        }).unwrap();
-    });
+        match util::setup_logger() {
+            Err(why) => panic!("{}", why),
+            Ok(_) => (),
+        };
 
-    if let Ok(Event::Connect(_sender)) = rx.recv() {
-        println!("{} {} Fetching Certificates ...", style("[Nettfiske]").bold().dim(), LOOKING_GLASS);
+        let url: String = format!("{}", WEBSOCKET_URL);
+        let (tx, rx) = channel();
+
+        let client = thread::spawn(move || {
+            connect(url, |sender| Client {
+                list: List::fetch().unwrap(),
+                config: config.clone(),
+                ws_out: sender,
+                thread_out: tx.clone(),
+            }).unwrap();
+        });
+
+        if let Ok(Event::Connect(_sender)) = rx.recv() {
+            println!("{} {} Fetching Certificates ...", style("[Nettfiske]").bold().dim(), LOOKING_GLASS);
+        }
+
+        // Ensure the client has a chance to finish up
+        client.join().unwrap();        
     }
-
-    // Ensure the client has a chance to finish up
-    client.join().unwrap();
 }
