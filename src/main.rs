@@ -11,17 +11,19 @@ extern crate unicode_skeleton;
 extern crate ws;
 extern crate clap;
 
-mod util;
+mod nettfiske;
 mod data;
 
+use nettfiske::{Nettfiske};
 use std::thread;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender as TSender;
-use util::CertString;
+use data::CertString;
 use serde_json::{from_str};
 use console::{Emoji, style};
-use publicsuffix::List;
 use clap::{Arg, App};
+use std::fs::File;
+use std::io::{BufReader, Error as IOError, prelude::*};
 use ws::{connect, CloseCode, Error, ErrorKind, Handler, Handshake, Message, Result as WS_RESULT, Sender};
 
 static LOOKING_GLASS: Emoji = Emoji("🔍  ", "");
@@ -33,14 +35,18 @@ enum Event {
 }
 
 struct Client {
-    list: List,
-    config: data::Config,
+    nettfiske: Nettfiske,
     ws_out: Sender,
     thread_out: TSender<Event>,
 }
 
 impl Handler for Client {
     fn on_open(&mut self, _: Handshake) -> WS_RESULT<()> {
+        match self.nettfiske.setup_logger() {
+            Err(why) => panic!("{}", why),
+            Ok(_) => (),
+        };
+
         self.thread_out
             .send(Event::Connect(self.ws_out.clone()))
             .map_err(|err| {
@@ -58,12 +64,8 @@ impl Handler for Client {
             Ok(message) => {
                 let cert: CertString = message;
                 if cert.message_type.contains("certificate_update") {
-                    for mut domain in cert.data.leaf_cert.all_domains {
-                        if domain.starts_with("*.") {
-                            domain = domain.replace("*.", "");
-                        }
-                        
-                        util::analyse_domain(&domain, &mut self.list, self.config.clone());
+                    for domain in cert.data.leaf_cert.all_domains {
+                        self.nettfiske.analyse_domain(&domain, cert.data.chain.clone());
                     }
                 }
             } Err(e) => {
@@ -77,18 +79,18 @@ impl Handler for Client {
 
     fn on_close(&mut self, code: CloseCode, reason: &str) {
         if reason.is_empty() {
-            util::display(format!("<<< Connection Closed by CertStream: <({:?})>", code));
+            display(format!("<<< Connection Closed by CertStream: <({:?})>", code));
         } else {
-            util::display(format!("<<< Connection Closed by CertStream: <({:?}) {}>", code, reason));
+            display(format!("<<< Connection Closed by CertStream: <({:?}) {}>", code, reason));
         }
 
         if let Err(err) = self.thread_out.send(Event::Disconnect) {
-            util::display(format!("{:?}", err))
+            display(format!("{:?}", err))
         }
     }
 
     fn on_error(&mut self, err: Error) {
-        util::display(format!("<<< Error<{:?}>", err))
+        display(format!("<<< Error<{:?}>", err))
     }
 }
 
@@ -102,22 +104,14 @@ fn main() {
                         ]).get_matches();
 
     if let Some(file_name) = matches.value_of("input") {
-        let json_config = util::open_json_config(file_name).unwrap();
-
+        let json_config = open_json_config(file_name).unwrap();
         let config: data::Config = serde_json::from_str(&json_config).unwrap();
-
-        match util::setup_logger() {
-            Err(why) => panic!("{}", why),
-            Ok(_) => (),
-        };
-
         let url: String = format!("{}", WEBSOCKET_URL);
         let (tx, rx) = channel();
 
         let client = thread::spawn(move || {
             connect(url, |sender| Client {
-                list: List::fetch().unwrap(),
-                config: config.clone(),
+                nettfiske: Nettfiske::new(config.clone()),
                 ws_out: sender,
                 thread_out: tx.clone(),
             }).unwrap();
@@ -130,4 +124,17 @@ fn main() {
         // Ensure the client has a chance to finish up
         client.join().unwrap();        
     }
+}
+
+fn display(string: String) {
+    println!("{}", string);
+}
+
+fn open_json_config(file_name: &str) -> Result<String, IOError> {
+    let file = File::open(file_name)?;
+    let mut buf_reader = BufReader::new(file);
+    let mut contents = String::new();
+    buf_reader.read_to_string(&mut contents)?;
+ 
+    Ok(contents)    
 }

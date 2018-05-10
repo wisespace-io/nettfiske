@@ -1,7 +1,7 @@
 [package]
 name = "nettfiske"
-version = "0.1.3"
-authors = ["Flavio Oliveira <rusty@wisespace.io>"]
+version = "0.2.0"
+authors = ["Flavio Oliveira <flavio@wisespace.io>"]
 license = "MIT OR Apache-2.0"
 
 description = "Detect Phishing fetching Certificate Transparency Logs"
