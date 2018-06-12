@@ -100,7 +100,11 @@ fn main() {
                             Arg::with_name("input")
                                     .help("the input file to use")
                                     .index(1)
-                                    .required(true)
+                                    .required(true),
+                            Arg::with_name("quiet")
+                                    .help("Be less verbose")
+                                    .short("q")
+                                    .long("quiet")
                         ]).get_matches();
 
     if let Some(file_name) = matches.value_of("input") {
@@ -118,11 +122,13 @@ fn main() {
         });
 
         if let Ok(Event::Connect(_sender)) = rx.recv() {
-            println!("{} {} Fetching Certificates ...", style("[Nettfiske]").bold().dim(), LOOKING_GLASS);
+            if !matches.is_present("quiet") {
+                println!("{} {} Fetching Certificates ...", style("[Nettfiske]").bold().dim(), LOOKING_GLASS);
+            }
         }
 
         // Ensure the client has a chance to finish up
-        client.join().unwrap();        
+        client.join().unwrap();
     }
 }
 
@@ -135,6 +141,6 @@ fn open_json_config(file_name: &str) -> Result<String, IOError> {
     let mut buf_reader = BufReader::new(file);
     let mut contents = String::new();
     buf_reader.read_to_string(&mut contents)?;
- 
-    Ok(contents)    
+
+    Ok(contents)
 }
