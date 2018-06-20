@@ -23,7 +23,11 @@ impl Nettfiske {
         }
     }
 
-    pub fn setup_logger(&self) -> Result<(), fern::InitError> {
+    pub fn setup_logger(&self, enable: bool) -> Result<(), fern::InitError> {
+        if !enable {
+            return Ok(());
+        }
+
         fern::Dispatch::new()
             .format(|out, message, _record| {
                 out.finish(format_args!(

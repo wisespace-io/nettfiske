@@ -38,11 +38,12 @@ struct Client {
     nettfiske: Nettfiske,
     ws_out: Sender,
     thread_out: TSender<Event>,
+    logging: bool,
 }
 
 impl Handler for Client {
     fn on_open(&mut self, _: Handshake) -> WS_RESULT<()> {
-        match self.nettfiske.setup_logger() {
+        match self.nettfiske.setup_logger(self.logging) {
             Err(why) => panic!("{}", why),
             Ok(_) => (),
         };
@@ -104,7 +105,10 @@ fn main() {
                             Arg::with_name("quiet")
                                     .help("Be less verbose")
                                     .short("q")
-                                    .long("quiet")
+                                    .long("quiet"),
+                            Arg::with_name("nolog")
+                                    .help("Don't output log file")
+                                    .long("nolog")
                         ]).get_matches();
 
     if let Some(file_name) = matches.value_of("input") {
@@ -113,11 +117,13 @@ fn main() {
         let url: String = format!("{}", WEBSOCKET_URL);
         let (tx, rx) = channel();
 
+        let logging_enabled = !matches.is_present("nolog");
         let client = thread::spawn(move || {
             connect(url, |sender| Client {
                 nettfiske: Nettfiske::new(config.clone()),
                 ws_out: sender,
                 thread_out: tx.clone(),
+                logging: logging_enabled,
             }).unwrap();
         });
 
