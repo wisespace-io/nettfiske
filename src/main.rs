@@ -44,7 +44,7 @@ struct Client {
 impl Handler for Client {
     fn on_open(&mut self, _: Handshake) -> WS_RESULT<()> {
         match self.nettfiske.setup_logger(self.logging) {
-            Err(why) => panic!("{}", why),
+            Err(why) => error!("Error setting UP log: {}", why),
             Ok(_) => (),
         };
 
@@ -134,7 +134,10 @@ fn main() {
         }
 
         // Ensure the client has a chance to finish up
-        client.join().unwrap();
+        match client.join() {
+            Ok(_) => (),
+            Err(err) => println!("thread panicked {:?}", err), 
+        }      
     }
 }
 
