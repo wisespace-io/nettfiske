@@ -31,7 +31,7 @@ pub struct Sender {
 pub struct WebSockets {
     socket: Option<(WebSocket<AutoStream>, Response)>,
     _sender: Sender,
-    event_handler: Option<Box<EventHandler>>, 
+    event_handler: Option<Box<dyn EventHandler>>, 
 }
 
 impl WebSockets {
@@ -83,6 +83,7 @@ impl WebSockets {
                     Message::Binary(_) => {}
                     Message::Ping(_) |
                     Message::Pong(_) => {}
+                    Message::Close(_) => {}
                 }
             }
         }
