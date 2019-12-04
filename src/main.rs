@@ -84,13 +84,14 @@ fn main() {
         let json_config = open_json_config(file_name).unwrap();
         let config: data::Config = serde_json::from_str(&json_config).unwrap();
 
-        let logging_enabled = !matches.is_present("nolog");
+        let mut logging_enabled = !matches.is_present("nolog");
         let is_present = !matches.is_present("quiet");
 
         loop {
             if run(config.clone(), logging_enabled, is_present) == true {
                 break;
             }
+            logging_enabled = false; // log already initialized
         }   
     }
 }

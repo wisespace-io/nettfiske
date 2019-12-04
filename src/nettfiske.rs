@@ -187,13 +187,21 @@ impl Nettfiske {
     }
 
     pub fn certificate_info(&self, chain: Vec<ChainObjects>) -> Certificate {
-        let sub_to = chain[0].subject.clone();
-        let sub_by = chain[1].subject.clone();
-        let certificate = Certificate {
-            issued_to: sub_to.organization.unwrap_or("".to_string()),
-            issued_by: sub_by.organization.unwrap_or("".to_string())
-        };
-
-        certificate    
+        if chain.len() > 1 {
+            let sub_to = chain[0].subject.clone();
+            let sub_by = chain[1].subject.clone();
+            let certificate = Certificate {
+                issued_to: sub_to.organization.unwrap_or("".to_string()),
+                issued_by: sub_by.organization.unwrap_or("".to_string())
+            };
+            certificate
+        } else {
+            let sub_to = chain[0].subject.clone();
+            let certificate = Certificate {
+                issued_to: sub_to.organization.unwrap_or("".to_string()),
+                issued_by: "".to_string()
+            };
+            certificate            
+        }
     }
 }

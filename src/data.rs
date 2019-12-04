@@ -36,7 +36,7 @@ pub struct Subject {
     #[serde(rename = "OU")]
     pub organizational_unit: Option<String>,
     #[serde(rename = "CN")]
-    pub common_name: String
+    pub common_name: Option<String>
 }
 
 
