@@ -1,7 +1,7 @@
 extern crate fern;
 extern crate chrono;
 
-use data::{Certificate, Config, ChainObjects};
+use crate::data::{Certificate, Config, ChainObjects};
 use log::{LevelFilter};
 use publicsuffix::List;
 use console::{style};

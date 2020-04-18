@@ -1,4 +1,4 @@
-use errors::*;
+use crate::errors::*;
 use url::Url;
 use tungstenite::connect;
 use tungstenite::Message;

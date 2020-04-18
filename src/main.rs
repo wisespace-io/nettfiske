@@ -17,12 +17,12 @@ mod data;
 mod errors;
 mod websockets;
 
-use errors::*;
-use websockets::*;
+use crate::errors::*;
+use crate::websockets::*;
 use std::{thread, time};
 
-use nettfiske::{Nettfiske};
-use data::CertString;
+use crate::nettfiske::{Nettfiske};
+use crate::data::CertString;
 use serde_json::{from_str};
 use console::{Emoji, style};
 use clap::{Arg, App};
