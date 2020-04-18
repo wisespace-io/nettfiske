@@ -1,5 +1,5 @@
-extern crate fern;
-extern crate chrono;
+use fern;
+use chrono;
 
 use crate::data::{Certificate, Config, ChainObjects};
 use log::{LevelFilter};

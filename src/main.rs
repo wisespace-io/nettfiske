@@ -1,16 +1,7 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-extern crate url;
-extern crate strsim;
-extern crate console;
-extern crate publicsuffix;
-extern crate idna;
-extern crate unicode_skeleton;
-extern crate tungstenite;
-extern crate clap;
+use serde_json;
 
 mod nettfiske;
 mod data;
@@ -20,7 +11,6 @@ mod websockets;
 use crate::errors::*;
 use crate::websockets::*;
 use std::{thread, time};
-
 use crate::nettfiske::{Nettfiske};
 use crate::data::CertString;
 use serde_json::{from_str};
@@ -29,7 +19,7 @@ use clap::{Arg, App};
 use std::fs::File;
 use std::io::{BufReader, prelude::*};
 
-static LOOKING_GLASS: Emoji = Emoji("🔍  ", "");
+static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
 
 struct WebSocketHandler {
     nettfiske: Nettfiske,
