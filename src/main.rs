@@ -28,10 +28,9 @@ struct WebSocketHandler {
 
 impl EventHandler for WebSocketHandler {
     fn on_connect(&mut self) {
-        match self.nettfiske.setup_logger(self.logging) {
-            Err(why) => error!("Error setting UP log: {}", why),
-            Ok(_) => (),
-        };
+        if let Err(why) = self.nettfiske.setup_logger(self.logging) { 
+            error!("Error setting UP log: {}", why) 
+        }
     }  
 
     fn on_data_event(&mut self, event: String) {
@@ -78,7 +77,7 @@ fn main() {
         let is_present = !matches.is_present("quiet");
 
         loop {
-            if run(config.clone(), logging_enabled, is_present) == true {
+            if run(config.clone(), logging_enabled, is_present) {
                 break;
             }
             logging_enabled = false; // log already initialized
@@ -92,7 +91,7 @@ fn run(config: data::Config, logging_enabled: bool, is_present: bool) -> bool {
     let mut web_socket: WebSockets = WebSockets::new();
 
     web_socket.add_event_handler(WebSocketHandler {
-        nettfiske: Nettfiske::new(config.clone()),
+        nettfiske: Nettfiske::new(config),
         logging: logging_enabled,      
     });
 
@@ -107,7 +106,7 @@ fn run(config: data::Config, logging_enabled: bool, is_present: bool) -> bool {
         return false;
     }
 
-    return true;
+    true
 }
 
 fn display(string: String) {

@@ -19,7 +19,7 @@ impl Nettfiske {
     pub fn new(config: Config) -> Self {
         Nettfiske {
             list: List::fetch().unwrap(),
-            config: config
+            config
         }
     }
 
@@ -100,7 +100,8 @@ impl Nettfiske {
         self.report(score, &original_domain, &domain, punycode_detected);
     }
 
-    fn search_tldl_on_subdomain(&self, sub_domain: &Vec<&str>) -> usize {
+    #[allow(clippy::never_loop)]
+    fn search_tldl_on_subdomain(&self, sub_domain: &[&str]) -> usize {
         let tldl: Vec<&str> = vec!["com", "net", "-net", "-com", "net-", "com-", "com/", "net/"];
         for key in &tldl {
             for name in sub_domain {
@@ -111,27 +112,26 @@ impl Nettfiske {
                 }
             }
         }
-        return 0;
+        0
     }
 
     fn deeply_nested(&self, domain: &str) -> usize {
         let v: Vec<&str> = domain.split('.').collect();
-        let size = if v.len() >= 3 { v.len() * 3 } else { 0 };
-        size
+        if v.len() >= 3 { v.len() * 3 } else { 0 }
     }
 
     fn domain_keywords(&self, name: &str, key: &str) -> usize {
         if name.contains(key) {
             return 10;
         }
-        return 0;
+        0
     }
 
     fn domain_keywords_exact_match(&self, name: &str, key: &str) -> usize {
         if name.eq_ignore_ascii_case(key) {
             return 10;
         }
-        return 0;
+        0
     }
 
     // Damerau Levenshtein: Calculates number of operations (Insertions, deletions or substitutions,
@@ -144,7 +144,7 @@ impl Nettfiske {
         } else if distance == 1 {
             return 8 * weight;
         }
-        return 0;
+        0
     }
 
     // Decode the domain as Punycode
@@ -159,7 +159,7 @@ impl Nettfiske {
                 let skeleton = decoded.skeleton_chars().collect::<String>();
                 result.push(skeleton.clone());
             } else {
-                result.push(word.to_string());
+                result.push((*word).to_string());
             }
         }
 
@@ -190,18 +190,16 @@ impl Nettfiske {
         if chain.len() > 1 {
             let sub_to = chain[0].subject.clone();
             let sub_by = chain[1].subject.clone();
-            let certificate = Certificate {
-                issued_to: sub_to.organization.unwrap_or("".to_string()),
-                issued_by: sub_by.organization.unwrap_or("".to_string())
-            };
-            certificate
+            Certificate {
+                issued_to: sub_to.organization.unwrap_or_else(|| "".to_string()),
+                issued_by: sub_by.organization.unwrap_or_else(|| "".to_string())
+            }
         } else {
             let sub_to = chain[0].subject.clone();
-            let certificate = Certificate {
-                issued_to: sub_to.organization.unwrap_or("".to_string()),
+            Certificate {
+                issued_to: sub_to.organization.unwrap_or_else(|| "".to_string()),
                 issued_by: "".to_string()
-            };
-            certificate            
+            }       
         }
     }
 }

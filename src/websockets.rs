@@ -7,7 +7,7 @@ use tungstenite::client::AutoStream;
 use tungstenite::handshake::client::Response;
 use std::sync::mpsc::{self, channel};
 
-static WEBSOCKET_URL: &'static str = "wss://certstream.calidog.io";
+static WEBSOCKET_URL: & str = "wss://certstream.calidog.io";
 
 pub trait EventHandler {
     fn on_connect(&mut self);
@@ -38,7 +38,7 @@ impl WebSockets {
     pub fn new() -> WebSockets {
         let (tx, _rx) = channel::<WsMessage>();
         let sender = Sender {
-            tx: tx
+            tx
         };
 
         WebSockets {

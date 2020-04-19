@@ -1,10 +1,10 @@
 {
     "identities" : [
         { 
-            "common_name": "myetherwallet"
+            "common_name": "youtube"
         },
         {
-            "common_name": "bitfinex"
+            "common_name": "facebook"
         },
         {
             "common_name": "binance",
