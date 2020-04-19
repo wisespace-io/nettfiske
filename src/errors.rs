@@ -7,7 +7,7 @@ error_chain! {
         Error, ErrorKind, ResultExt, Result;
     }
 
-    errors {         
+    errors {
 
     }
 

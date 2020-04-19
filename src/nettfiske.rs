@@ -15,11 +15,10 @@ pub struct Nettfiske {
 }
 
 impl Nettfiske {
-
     pub fn new(config: Config) -> Self {
         Nettfiske {
             list: List::fetch().unwrap(),
-            config
+            config,
         }
     }
 
@@ -45,11 +44,11 @@ impl Nettfiske {
     pub fn analyse_domain(&self, original_domain: &str, chain: Vec<ChainObjects>) {
         let mut punycode_detected = false;
         let mut score = 0;
-        
+
         let original_domain_str = original_domain.replace("*.", "");
 
         let domain = self.punycode(original_domain_str.to_string());
-        
+
         // It means that found punycode
         if original_domain_str != domain {
             punycode_detected = true;
@@ -57,8 +56,7 @@ impl Nettfiske {
 
         let certificate = self.certificate_info(chain);
 
-        if let Ok(domain_obj) = self.list.parse_domain(&domain) {  
-
+        if let Ok(domain_obj) = self.list.parse_domain(&domain) {
             if let Some(registrable) = domain_obj.root() {
                 // Registrable domain
                 let domain_name: Vec<&str> = registrable.split('.').collect();
@@ -72,20 +70,23 @@ impl Nettfiske {
                 for identities in &self.config.identities {
                     let key = identities.common_name.as_str();
 
-                    if identities.certificate.issued_to == certificate.issued_to &&
-                       identities.certificate.issued_by == certificate.issued_by {
+                    if identities.certificate.issued_to == certificate.issued_to
+                        && identities.certificate.issued_by == certificate.issued_by
+                    {
                         return;
                     }
 
                     // Check Registration domain
                     score += self.domain_keywords(domain_name[0], key) * 4;
-                    score += self.calc_string_edit_distance(domain_name[0], key, 6, punycode_detected);
+                    score +=
+                        self.calc_string_edit_distance(domain_name[0], key, 6, punycode_detected);
 
                     // Check subdomain
                     for name in &sub_domain_name {
                         score += self.domain_keywords(name, key) * 5;
                         if !name.contains("mail") && !name.contains("cloud") {
-                            score += self.calc_string_edit_distance(name, key, 4, punycode_detected);
+                            score +=
+                                self.calc_string_edit_distance(name, key, 4, punycode_detected);
                         }
                     }
                 }
@@ -117,7 +118,11 @@ impl Nettfiske {
 
     fn deeply_nested(&self, domain: &str) -> usize {
         let v: Vec<&str> = domain.split('.').collect();
-        if v.len() >= 3 { v.len() * 3 } else { 0 }
+        if v.len() >= 3 {
+            v.len() * 3
+        } else {
+            0
+        }
     }
 
     fn domain_keywords(&self, name: &str, key: &str) -> usize {
@@ -136,7 +141,9 @@ impl Nettfiske {
 
     // Damerau Levenshtein: Calculates number of operations (Insertions, deletions or substitutions,
     // or transposition of two adjacent characters) required to change one word into the other.
-    fn calc_string_edit_distance(&self, name: &str, key: &str, weight: usize, punycode_detected: bool) -> usize {
+    fn calc_string_edit_distance(
+        &self, name: &str, key: &str, weight: usize, punycode_detected: bool,
+    ) -> usize {
         let distance = damerau_levenshtein(name, key);
 
         if (distance == 1 || distance == 0) && punycode_detected {
@@ -168,13 +175,21 @@ impl Nettfiske {
 
     fn report(&self, score: usize, domain_original: &str, domain: &str, punycode_detected: bool) {
         if score >= 90 && punycode_detected {
-            println!("Homoglyph detected {} (Punycode: {})", style(domain).red().on_black().bold(), domain_original);
+            println!(
+                "Homoglyph detected {} (Punycode: {})",
+                style(domain).red().on_black().bold(),
+                domain_original
+            );
         } else if score >= 90 {
-            println!("Suspicious {} (score {})", style(domain).red(), score);    
+            println!("Suspicious {} (score {})", style(domain).red(), score);
         } else if score >= 70 {
-            println!("Suspicious {} (score {})", style(domain).yellow(), score);        
+            println!("Suspicious {} (score {})", style(domain).yellow(), score);
         } else if score >= 56 {
-            println!("Suspicious {} (score {})", style(domain_original).magenta(), score);
+            println!(
+                "Suspicious {} (score {})",
+                style(domain_original).magenta(),
+                score
+            );
         }
 
         if score >= 56 {
@@ -192,14 +207,14 @@ impl Nettfiske {
             let sub_by = chain[1].subject.clone();
             Certificate {
                 issued_to: sub_to.organization.unwrap_or_else(|| "".to_string()),
-                issued_by: sub_by.organization.unwrap_or_else(|| "".to_string())
+                issued_by: sub_by.organization.unwrap_or_else(|| "".to_string()),
             }
         } else {
             let sub_to = chain[0].subject.clone();
             Certificate {
                 issued_to: sub_to.organization.unwrap_or_else(|| "".to_string()),
-                issued_by: "".to_string()
-            }       
+                issued_by: "".to_string(),
+            }
         }
     }
 }

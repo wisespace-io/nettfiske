@@ -1,4 +1,3 @@
-
 #[derive(Deserialize, Debug)]
 pub struct CertString {
     pub message_type: String,
@@ -8,7 +7,7 @@ pub struct CertString {
 #[derive(Deserialize, Debug)]
 pub struct Data {
     pub leaf_cert: LeafCert,
-    pub chain: Vec<ChainObjects>
+    pub chain: Vec<ChainObjects>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -36,32 +35,31 @@ pub struct Subject {
     #[serde(rename = "OU")]
     pub organizational_unit: Option<String>,
     #[serde(rename = "CN")]
-    pub common_name: Option<String>
+    pub common_name: Option<String>,
 }
-
 
 // Config
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
-    pub identities : Vec<WebsiteIdentity>
+    pub identities: Vec<WebsiteIdentity>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsiteIdentity {
-   pub common_name: String,
-   #[serde(default = "default_certificate")]
-   pub certificate: Certificate
+    pub common_name: String,
+    #[serde(default = "default_certificate")]
+    pub certificate: Certificate,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Certificate {
     pub issued_to: String,
-    pub issued_by: String
+    pub issued_by: String,
 }
 
 fn default_certificate() -> Certificate {
     Certificate {
         issued_to: "".to_string(),
-        issued_by: "".to_string()
+        issued_by: "".to_string(),
     }
 }
