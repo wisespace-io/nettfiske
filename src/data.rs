@@ -1,3 +1,5 @@
+use serde::{Deserialize};
+
 #[derive(Deserialize, Debug)]
 pub struct CertString {
     pub message_type: String,
@@ -7,18 +9,12 @@ pub struct CertString {
 #[derive(Deserialize, Debug)]
 pub struct Data {
     pub leaf_cert: LeafCert,
-    pub chain: Vec<ChainObjects>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct LeafCert {
     pub subject: Subject,
     pub all_domains: Vec<String>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct ChainObjects {
-    pub subject: Subject,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -47,19 +43,5 @@ pub struct Config {
 #[derive(Deserialize, Debug, Clone)]
 pub struct WebsiteIdentity {
     pub common_name: String,
-    #[serde(default = "default_certificate")]
-    pub certificate: Certificate,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Certificate {
-    pub issued_to: String,
-    pub issued_by: String,
-}
-
-fn default_certificate() -> Certificate {
-    Certificate {
-        issued_to: "".to_string(),
-        issued_by: "".to_string(),
-    }
-}
