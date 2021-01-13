@@ -7,25 +7,19 @@
             "common_name": "facebook"
         },
         {
-            "common_name": "binance",
-            "certificate": {
-                "issued_to": "Binance Holdings Limited",
-                "issued_by": "DigiCert Inc"
-            }
+            "common_name": "binance"
         },
         {
-            "common_name": "coinbase",
-            "certificate": {
-                "issued_to": "Coinbase, Inc.",
-                "issued_by": "DigiCert Inc"
-            }
+            "common_name": "coinbase"
         },
         {
-            "common_name": "paypal",
-            "certificate": {
-                "issued_to": "PayPal, Inc.",
-                "issued_by": "Symantec Corporation"
-            }
+            "common_name": "kraken"
+        },
+        {
+            "common_name": "uniswap"
+        },
+        {
+            "common_name": "paypal"
         }
     ]
 }
