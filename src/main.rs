@@ -2,9 +2,6 @@
 extern crate log;
 #[macro_use]
 extern crate error_chain;
-#[macro_use]
-extern crate serde_derive;
-use serde_json;
 
 mod data;
 mod errors;
@@ -43,7 +40,7 @@ impl EventHandler for WebSocketHandler {
                 if cert.message_type.contains("certificate_update") {
                     for domain in cert.data.leaf_cert.all_domains {
                         self.nettfiske
-                            .analyse_domain(&domain, cert.data.chain.clone());
+                            .analyse_domain(&domain);
                     }
                 }
             }
