@@ -1,7 +1,4 @@
-use fern;
-use chrono;
-
-use crate::data::{Certificate, Config, ChainObjects};
+use crate::data::{Config};
 use log::{LevelFilter};
 use publicsuffix::List;
 use console::{style};
@@ -41,7 +38,7 @@ impl Nettfiske {
         Ok(())
     }
 
-    pub fn analyse_domain(&self, original_domain: &str, chain: Vec<ChainObjects>) {
+    pub fn analyse_domain(&self, original_domain: &str) {
         let mut punycode_detected = false;
         let mut score = 0;
 
@@ -53,8 +50,6 @@ impl Nettfiske {
         if original_domain_str != domain {
             punycode_detected = true;
         }
-
-        let certificate = self.certificate_info(chain);
 
         if let Ok(domain_obj) = self.list.parse_domain(&domain) {
             if let Some(registrable) = domain_obj.root() {
@@ -69,12 +64,6 @@ impl Nettfiske {
 
                 for identities in &self.config.identities {
                     let key = identities.common_name.as_str();
-
-                    if identities.certificate.issued_to == certificate.issued_to
-                        && identities.certificate.issued_by == certificate.issued_by
-                    {
-                        return;
-                    }
 
                     // Check Registration domain
                     score += self.domain_keywords(domain_name[0], key) * 4;
@@ -200,21 +189,5 @@ impl Nettfiske {
             }
         }
     }
-
-    pub fn certificate_info(&self, chain: Vec<ChainObjects>) -> Certificate {
-        if chain.len() > 1 {
-            let sub_to = chain[0].subject.clone();
-            let sub_by = chain[1].subject.clone();
-            Certificate {
-                issued_to: sub_to.organization.unwrap_or_else(|| "".to_string()),
-                issued_by: sub_by.organization.unwrap_or_else(|| "".to_string()),
-            }
-        } else {
-            let sub_to = chain[0].subject.clone();
-            Certificate {
-                issued_to: sub_to.organization.unwrap_or_else(|| "".to_string()),
-                issued_by: "".to_string(),
-            }
-        }
-    }
 }
+
