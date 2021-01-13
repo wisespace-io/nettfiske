@@ -1,7 +1,3 @@
-use std;
-use url;
-use tungstenite;
-
 error_chain! {
     types {
         Error, ErrorKind, ResultExt, Result;
